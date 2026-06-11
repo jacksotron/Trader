@@ -1,0 +1,63 @@
+trading:
+  # How often the agent runs (minutes)
+  interval_minutes: 30
+
+  # Risk management
+  max_position_pct: 10.0        # Max % of portfolio in any single position
+  max_daily_loss_pct: 3.0       # Stop trading if daily loss exceeds this %
+  max_portfolio_risk_pct: 50.0  # Max % of portfolio deployed at once
+  min_cash_reserve_pct: 10.0    # Always keep this % as cash
+
+  # Order settings
+  default_order_type: market    # market or limit
+  limit_order_slippage_pct: 0.5 # For limit orders, set limit this % from current price
+
+  # Options trading
+  options:
+    enabled: true
+    max_dte: 45                  # Max days to expiration
+    min_dte: 7                   # Min days to expiration
+    max_delta: 0.70              # Max absolute delta for options
+    min_delta: 0.20              # Min absolute delta for options
+    max_contracts: 5             # Max contracts per trade
+
+  # Asset class toggles
+  assets:
+    stocks: true
+    crypto: true
+    options: true
+
+  # Watchlists — agent can trade any of these
+  stocks_watchlist:
+    - AAPL
+    - MSFT
+    - NVDA
+    - AMZN
+    - GOOGL
+    - META
+    - TSLA
+    - SPY
+    - QQQ
+
+  crypto_watchlist:
+    - BTC
+    - ETH
+    - SOL
+    - DOGE
+    - ADA
+
+  # Market hours (Eastern Time)
+  market_hours:
+    open: "09:30"
+    close: "16:00"
+    extended_hours: false
+
+  # Agent behavior
+  agent:
+    model: claude-opus-4-8
+    effort: high
+    system_context: |
+      You are an expert algorithmic trader with deep knowledge of equities, options,
+      and cryptocurrency markets. Your goal is to grow the portfolio through disciplined,
+      risk-managed trades. Always consider market conditions, momentum, fundamentals,
+      and risk before placing any trade. Preserve capital above all else.
