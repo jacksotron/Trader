@@ -8,9 +8,19 @@ trading:
   max_portfolio_risk_pct: 90.0  # Max % of portfolio deployed at once
   min_cash_reserve_pct: 5.0     # Always keep this % as cash
 
+  # Exits (defaults the agent applies to every position)
+  stop_loss_pct: 8.0            # Exit longs this % below entry
+  take_profit_pct: 20.0         # Start scaling out this % above entry
+
   # Order settings
-  default_order_type: market    # market or limit
-  limit_order_slippage_pct: 0.5 # For limit orders, set limit this % from current price
+  default_order_type: limit     # Marketable limit: priced off the live quote with a slippage cap
+  limit_order_slippage_pct: 0.3 # Buys cap at ask*(1+x%); sells floor at bid*(1-x%)
+
+  # Execution discipline — orders are never queued while the market is closed
+  execution:
+    avoid_open_minutes: 15      # No new entries in the first N minutes (opening auction chaos)
+    avoid_close_minutes: 5      # No new entries into the closing auction
+    max_spread_pct: 1.0         # Skip entries when bid/ask spread exceeds this % of mid
 
   # Options trading
   options:

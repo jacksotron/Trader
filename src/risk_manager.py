@@ -10,21 +10,31 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RiskManager:
-    max_position_pct: float = 10.0
-    max_daily_loss_pct: float = 3.0
-    max_portfolio_risk_pct: float = 50.0
-    min_cash_reserve_pct: float = 10.0
+    max_position_pct: float = 25.0
+    max_daily_loss_pct: float = 10.0
+    max_portfolio_risk_pct: float = 90.0
+    min_cash_reserve_pct: float = 5.0
+    stop_loss_pct: float = 8.0
+    take_profit_pct: float = 20.0
 
+    _baseline_date: Optional[date] = field(default=None, init=False, repr=False)
     _session_start_equity: float = field(default=0.0, init=False, repr=False)
-    _today: date = field(default_factory=date.today, init=False, repr=False)
     _realized_pnl_today: float = field(default=0.0, init=False, repr=False)
 
     def initialize(self, current_equity: float) -> None:
+        """Set the daily-loss baseline.
+
+        Idempotent within a calendar day: repeated calls only reset the baseline
+        when the day rolls over, so intraday drawdown accumulates against a fixed
+        morning baseline instead of being wiped out every cycle.
+        """
         today = date.today()
-        if today != self._today:
-            self._today = today
-            self._realized_pnl_today = 0.0
+        if self._baseline_date == today:
+            return
+        self._baseline_date = today
         self._session_start_equity = current_equity
+        self._realized_pnl_today = 0.0
+        logger.info("Daily risk baseline set: equity=$%.2f", current_equity)
 
     def record_trade_pnl(self, pnl: float) -> None:
         self._realized_pnl_today += pnl
@@ -44,6 +54,13 @@ class RiskManager:
             )
             return True
         return False
+
+    def exit_levels(self, entry_price: float) -> dict:
+        """Default stop and target prices for a long entry."""
+        return {
+            "stop": round(entry_price * (1 - self.stop_loss_pct / 100), 2),
+            "target": round(entry_price * (1 + self.take_profit_pct / 100), 2),
+        }
 
     def max_position_value(self, portfolio_equity: float) -> float:
         return portfolio_equity * (self.max_position_pct / 100)
@@ -117,8 +134,10 @@ class RiskManager:
         portfolio_equity: float,
         cash: float,
         current_deployed: float,
-        max_contracts: int = 5,
+        max_contracts: int = 10,
     ) -> tuple[bool, str]:
+        if premium_per_contract <= 0:
+            return False, "Options orders require a real limit price; refusing to validate against a guess."
         order_value = contracts * premium_per_contract * 100
         max_order = self.max_order_value(portfolio_equity, cash, current_deployed)
 

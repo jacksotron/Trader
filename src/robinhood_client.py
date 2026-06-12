@@ -1,10 +1,11 @@
 """Robinhood API wrapper using robin_stocks."""
 
 import os
+from datetime import datetime, timezone
+from typing import Optional
+
 import pyotp
 import robin_stocks.robinhood as rh
-from decimal import Decimal
-from typing import Optional
 
 
 def login() -> None:
@@ -20,17 +21,52 @@ def logout() -> None:
     rh.logout()
 
 
+# ── Market session ────────────────────────────────────────────────────────────
+
+def get_market_session(market: str = "XNYS") -> dict:
+    """Live market session from the exchange calendar (holidays included).
+
+    Returns session = 'pre' | 'regular' | 'after' | 'closed', plus
+    minutes_since_open / minutes_to_close while the regular session is running.
+    """
+    hours = rh.get_market_today_hours(market) or {}
+    now = datetime.now(timezone.utc)
+    result = {
+        "now": now.isoformat(),
+        "is_trading_day": bool(hours.get("is_open")),
+        "opens_at": hours.get("opens_at"),
+        "closes_at": hours.get("closes_at"),
+        "session": "closed",
+    }
+    if not result["is_trading_day"] or not result["opens_at"] or not result["closes_at"]:
+        return result
+
+    opens = datetime.fromisoformat(result["opens_at"].replace("Z", "+00:00"))
+    closes = datetime.fromisoformat(result["closes_at"].replace("Z", "+00:00"))
+    if now < opens:
+        result["session"] = "pre"
+    elif now <= closes:
+        result["session"] = "regular"
+        result["minutes_since_open"] = (now - opens).total_seconds() / 60
+        result["minutes_to_close"] = (closes - now).total_seconds() / 60
+    else:
+        result["session"] = "after"
+    return result
+
+
 # ── Portfolio ─────────────────────────────────────────────────────────────────
 
 def get_portfolio_summary() -> dict:
     profile = rh.load_portfolio_profile()
     account = rh.load_account_profile()
+    equity = float(profile.get("equity") or 0)
+    prev_close = float(profile.get("equity_previous_close") or 0)
     return {
-        "equity": float(profile.get("equity") or 0),
+        "equity": equity,
         "cash": float(account.get("cash") or 0),
         "buying_power": float(account.get("buying_power") or 0),
         "unsettled_funds": float(account.get("unsettled_funds") or 0),
-        "day_return_pct": float(profile.get("equity_previous_close") or profile.get("equity") or 1),
+        "day_return_pct": ((equity - prev_close) / prev_close * 100) if prev_close else 0.0,
     }
 
 
@@ -43,7 +79,7 @@ def get_stock_positions() -> list[dict]:
         qty = float(p.get("quantity") or 0)
         avg_buy = float(p.get("average_buy_price") or 0)
         quote = rh.get_latest_price(symbol)
-        current_price = float(quote[0]) if quote else avg_buy
+        current_price = float(quote[0]) if quote and quote[0] else avg_buy
         result.append({
             "symbol": symbol,
             "quantity": qty,
@@ -83,21 +119,25 @@ def get_options_positions() -> list[dict]:
     positions = rh.get_open_option_positions()
     result = []
     for p in positions:
-        option_id = p.get("option")
+        option_id = p.get("option_id") or (p.get("option") or "").rstrip("/").split("/")[-1]
         details = rh.get_option_instrument_data_by_id(option_id) if option_id else {}
         qty = float(p.get("quantity") or 0)
-        avg_buy = float(p.get("average_price") or 0)
-        current_price = float(p.get("trade_value_multiplier") or avg_buy)
+        avg_buy = float(p.get("average_price") or 0) / 100  # API reports per-contract notional
+        market = rh.get_option_market_data_by_id(option_id) if option_id else None
+        if isinstance(market, list):
+            market = market[0] if market else {}
+        current_price = float((market or {}).get("adjusted_mark_price") or 0) or avg_buy
         result.append({
-            "symbol": details.get("chain_symbol", "UNKNOWN"),
+            "symbol": (details or {}).get("chain_symbol", "UNKNOWN"),
             "option_id": option_id,
-            "option_type": details.get("type", "unknown"),
-            "strike_price": float(details.get("strike_price") or 0),
-            "expiration_date": details.get("expiration_date", ""),
+            "option_type": (details or {}).get("type", "unknown"),
+            "strike_price": float((details or {}).get("strike_price") or 0),
+            "expiration_date": (details or {}).get("expiration_date", ""),
             "quantity": qty,
             "average_buy_price": avg_buy,
             "current_price": current_price,
             "market_value": qty * current_price * 100,
+            "unrealized_pnl": (current_price - avg_buy) * qty * 100,
         })
     return result
 
@@ -108,10 +148,14 @@ def get_stock_quote(symbol: str) -> dict:
     quote = rh.get_quotes(symbol)[0]
     if not quote:
         return {}
+    bid = float(quote.get("bid_price") or 0)
+    ask = float(quote.get("ask_price") or 0)
+    mid = (bid + ask) / 2 if bid and ask else 0
     return {
         "symbol": symbol,
-        "ask_price": float(quote.get("ask_price") or 0),
-        "bid_price": float(quote.get("bid_price") or 0),
+        "ask_price": ask,
+        "bid_price": bid,
+        "spread_pct": ((ask - bid) / mid * 100) if mid else None,
         "last_trade_price": float(quote.get("last_trade_price") or 0),
         "last_extended_hours_trade_price": float(quote.get("last_extended_hours_trade_price") or 0) or None,
         "previous_close": float(quote.get("previous_close") or 0),
@@ -204,7 +248,7 @@ def get_crypto_historicals(symbol: str, interval: str = "5minute",
 
 # ── Orders ────────────────────────────────────────────────────────────────────
 
-def buy_stock(symbol: str, quantity: float, order_type: str = "market",
+def buy_stock(symbol: str, quantity: float, order_type: str = "limit",
               limit_price: Optional[float] = None) -> dict:
     if order_type == "limit" and limit_price:
         order = rh.order_buy_limit(symbol, quantity, limit_price)
@@ -213,7 +257,7 @@ def buy_stock(symbol: str, quantity: float, order_type: str = "market",
     return _parse_order(order)
 
 
-def sell_stock(symbol: str, quantity: float, order_type: str = "market",
+def sell_stock(symbol: str, quantity: float, order_type: str = "limit",
                limit_price: Optional[float] = None) -> dict:
     if order_type == "limit" and limit_price:
         order = rh.order_sell_limit(symbol, quantity, limit_price)
@@ -232,21 +276,14 @@ def sell_crypto(symbol: str, amount_in_dollars: float) -> dict:
     return _parse_order(order)
 
 
-def buy_option(option_id: str, quantity: int,
-               limit_price: Optional[float] = None) -> dict:
-    if limit_price:
-        order = rh.order_buy_option_limit("open", "debit", limit_price, option_id, quantity)
-    else:
-        order = rh.order_buy_option_limit("open", "debit", None, option_id, quantity)
+def buy_option(option_id: str, quantity: int, limit_price: float) -> dict:
+    """Options orders are always limit-priced; market orders on options are never sent."""
+    order = rh.order_buy_option_limit("open", "debit", limit_price, option_id, quantity)
     return _parse_order(order)
 
 
-def sell_option(option_id: str, quantity: int,
-                limit_price: Optional[float] = None) -> dict:
-    if limit_price:
-        order = rh.order_sell_option_limit("close", "credit", limit_price, option_id, quantity)
-    else:
-        order = rh.order_sell_option_limit("close", "credit", None, option_id, quantity)
+def sell_option(option_id: str, quantity: int, limit_price: float) -> dict:
+    order = rh.order_sell_option_limit("close", "credit", limit_price, option_id, quantity)
     return _parse_order(order)
 
 
