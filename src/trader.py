@@ -92,6 +92,11 @@ class Trader:
 
         logger.info("=== Starting trading cycle ===")
         try:
+            stale = rh.cancel_stale_orders(
+                self.trading_cfg.get("execution", {}).get("stale_order_minutes", 15))
+            if stale:
+                logger.info("Cancelled %d stale order(s): %s", len(stale), stale)
+
             portfolio = rh.get_portfolio_summary()
             self.risk.initialize(portfolio["equity"])  # idempotent: baseline set once per day
             self.journal.record_equity(portfolio["equity"])

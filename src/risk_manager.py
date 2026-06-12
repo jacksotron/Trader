@@ -17,7 +17,7 @@ class RiskManager:
     stop_loss_pct: float = 8.0
     take_profit_pct: float = 20.0
     risk_per_trade_pct: float = 2.0      # % of equity lost if a trade stops out
-    max_new_entries_per_day: int = 4
+    max_new_entries_per_day: int = 2
     loss_streak_halt: int = 3            # consecutive losing exits -> no new entries today
 
     _baseline_date: Optional[date] = field(default=None, init=False, repr=False)

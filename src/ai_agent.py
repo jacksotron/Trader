@@ -633,10 +633,25 @@ def _execute_tool(
         logger.info("BUY %s x%.4f @ limit $%.2f (stop $%.2f / target $%.2f) | %s",
                     symbol, quantity, limit_price, stop, target, inputs.get("rationale", ""))
         result = rh.buy_stock(symbol, quantity, order_type="limit", limit_price=limit_price)
-        if not result.get("error"):
-            plan = journal.record_entry(symbol, quantity, limit_price, stop, target,
+        if result.get("error"):
+            return result
+
+        # Fill truth: journal only what actually filled, at the actual price.
+        fill_timeout = exec_cfg.get("fill_timeout_seconds", 10)
+        status = rh.wait_for_fill(result["order_id"], timeout_s=fill_timeout)
+        result["fill_status"] = status
+        filled_qty = status.get("cumulative_quantity") or 0
+        if status.get("state") == "filled" or filled_qty > 0:
+            fill_price = status.get("average_price") or limit_price
+            plan = journal.record_entry(symbol, filled_qty or quantity, fill_price, stop, target,
                                         inputs.get("rationale", ""))
             result["journaled_plan"] = plan
+        else:
+            rh.cancel_order(result["order_id"])
+            result["error"] = (
+                f"Order not filled within {fill_timeout}s — cancelled to keep state clean. "
+                "Re-check the quote and reprice if the trade is still wanted."
+            )
         return result
 
     if name == "sell_stock":
@@ -658,9 +673,23 @@ def _execute_tool(
         logger.info("SELL %s x%.4f @ limit $%.2f (%s) | %s", symbol, quantity, limit_price,
                     exit_reason, inputs.get("rationale", ""))
         result = rh.sell_stock(symbol, quantity, order_type="limit", limit_price=limit_price)
-        if not result.get("error"):
-            trade = journal.record_exit(symbol, quantity, limit_price, exit_reason)
+        if result.get("error"):
+            return result
+
+        fill_timeout = exec_cfg.get("fill_timeout_seconds", 10)
+        status = rh.wait_for_fill(result["order_id"], timeout_s=fill_timeout)
+        result["fill_status"] = status
+        filled_qty = status.get("cumulative_quantity") or 0
+        if status.get("state") == "filled" or filled_qty > 0:
+            fill_price = status.get("average_price") or limit_price
+            trade = journal.record_exit(symbol, filled_qty or quantity, fill_price, exit_reason)
             result["journaled_trade"] = trade
+        else:
+            rh.cancel_order(result["order_id"])
+            result["error"] = (
+                f"Exit not filled within {fill_timeout}s — cancelled. For an URGENT exit (stop "
+                "breach) retry immediately with a lower explicit limit_price through the bid."
+            )
         return result
 
     if name == "buy_crypto":

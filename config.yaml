@@ -10,7 +10,7 @@ trading:
 
   # Per-trade risk budget — stop distance x size may not lose more than this
   risk_per_trade_pct: 2.0       # % of equity risked per trade (sizing = budget / stop distance)
-  max_new_entries_per_day: 4    # Entry throttle
+  max_new_entries_per_day: 2    # Entry throttle (backtest: trade count was the main cost driver — see BACKTEST.md)
   loss_streak_halt: 3           # Consecutive losing exits -> no new entries rest of day
 
   # Exits (fallback levels; ATR-based suggested stops override when available)
@@ -35,6 +35,8 @@ trading:
     avoid_open_minutes: 15      # No new entries in the first N minutes (opening auction chaos)
     avoid_close_minutes: 5      # No new entries into the closing auction
     max_spread_pct: 1.0         # Skip entries when bid/ask spread exceeds this % of mid
+    fill_timeout_seconds: 10    # Poll for fill; unfilled orders are cancelled (journal = fill truth)
+    stale_order_minutes: 15     # Cycle start cancels resting orders older than this
 
   # Options trading
   options:
