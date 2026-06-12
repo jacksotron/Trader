@@ -2,11 +2,11 @@ trading:
   # How often the agent runs (minutes)
   interval_minutes: 30
 
-  # Risk management
-  max_position_pct: 10.0        # Max % of portfolio in any single position
-  max_daily_loss_pct: 3.0       # Stop trading if daily loss exceeds this %
-  max_portfolio_risk_pct: 50.0  # Max % of portfolio deployed at once
-  min_cash_reserve_pct: 10.0    # Always keep this % as cash
+  # Risk management — aggressive profile: high risk / high reward
+  max_position_pct: 25.0        # Max % of portfolio in any single position
+  max_daily_loss_pct: 10.0      # Stop trading if daily loss exceeds this %
+  max_portfolio_risk_pct: 90.0  # Max % of portfolio deployed at once
+  min_cash_reserve_pct: 5.0     # Always keep this % as cash
 
   # Order settings
   default_order_type: market    # market or limit
@@ -16,10 +16,10 @@ trading:
   options:
     enabled: true
     max_dte: 45                  # Max days to expiration
-    min_dte: 7                   # Min days to expiration
-    max_delta: 0.70              # Max absolute delta for options
-    min_delta: 0.20              # Min absolute delta for options
-    max_contracts: 5             # Max contracts per trade
+    min_dte: 1                   # Min days to expiration (short-dated allowed)
+    max_delta: 0.90              # Max absolute delta for options
+    min_delta: 0.10              # Min absolute delta (deep OTM lottery plays allowed)
+    max_contracts: 10            # Max contracts per trade
 
   # Asset class toggles
   assets:
