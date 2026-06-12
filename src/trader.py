@@ -9,6 +9,7 @@ import schedule
 
 from . import robinhood_client as rh
 from .ai_agent import TradingAgent
+from .journal import TradeJournal
 from .risk_manager import RiskManager
 
 logger = logging.getLogger(__name__)
@@ -30,8 +31,12 @@ class Trader:
             min_cash_reserve_pct=trading_cfg.get("min_cash_reserve_pct", 5.0),
             stop_loss_pct=trading_cfg.get("stop_loss_pct", 8.0),
             take_profit_pct=trading_cfg.get("take_profit_pct", 20.0),
+            risk_per_trade_pct=trading_cfg.get("risk_per_trade_pct", 2.0),
+            max_new_entries_per_day=trading_cfg.get("max_new_entries_per_day", 4),
+            loss_streak_halt=trading_cfg.get("loss_streak_halt", 3),
         )
-        self.agent = TradingAgent(trading_cfg, self.risk)
+        self.journal = TradeJournal(trading_cfg.get("journal_path", "trader_journal.json"))
+        self.agent = TradingAgent(trading_cfg, self.risk, self.journal)
 
         self._running = False
 
@@ -89,6 +94,7 @@ class Trader:
         try:
             portfolio = rh.get_portfolio_summary()
             self.risk.initialize(portfolio["equity"])  # idempotent: baseline set once per day
+            self.journal.record_equity(portfolio["equity"])
 
             if self.risk.is_daily_loss_limit_breached(portfolio["equity"]):
                 logger.warning("Daily loss limit breached — no trading today")

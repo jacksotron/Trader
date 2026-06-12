@@ -16,6 +16,9 @@ class RiskManager:
     min_cash_reserve_pct: float = 5.0
     stop_loss_pct: float = 8.0
     take_profit_pct: float = 20.0
+    risk_per_trade_pct: float = 2.0      # % of equity lost if a trade stops out
+    max_new_entries_per_day: int = 4
+    loss_streak_halt: int = 3            # consecutive losing exits -> no new entries today
 
     _baseline_date: Optional[date] = field(default=None, init=False, repr=False)
     _session_start_equity: float = field(default=0.0, init=False, repr=False)
@@ -61,6 +64,23 @@ class RiskManager:
             "stop": round(entry_price * (1 - self.stop_loss_pct / 100), 2),
             "target": round(entry_price * (1 + self.take_profit_pct / 100), 2),
         }
+
+    def validate_trade_risk(self, quantity: float, entry_price: float,
+                            stop_price: float, portfolio_equity: float) -> tuple[bool, str]:
+        """Position size must respect the per-trade risk budget: loss at the stop
+        may not exceed risk_per_trade_pct of equity (5% tolerance for rounding)."""
+        if stop_price >= entry_price:
+            return False, f"Stop ${stop_price:.2f} must be below entry ${entry_price:.2f} for a long."
+        risk_budget = portfolio_equity * self.risk_per_trade_pct / 100
+        trade_risk = (entry_price - stop_price) * quantity
+        if trade_risk > risk_budget * 1.05:
+            max_qty = risk_budget / (entry_price - stop_price)
+            return False, (
+                f"Trade risks ${trade_risk:.2f} at the stop but the budget is ${risk_budget:.2f} "
+                f"({self.risk_per_trade_pct}% of equity). Reduce to <= {max_qty:.6f} shares "
+                f"or tighten the stop."
+            )
+        return True, "OK"
 
     def max_position_value(self, portfolio_equity: float) -> float:
         return portfolio_equity * (self.max_position_pct / 100)

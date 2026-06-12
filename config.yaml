@@ -8,9 +8,17 @@ trading:
   max_portfolio_risk_pct: 90.0  # Max % of portfolio deployed at once
   min_cash_reserve_pct: 5.0     # Always keep this % as cash
 
-  # Exits (defaults the agent applies to every position)
+  # Per-trade risk budget — stop distance x size may not lose more than this
+  risk_per_trade_pct: 2.0       # % of equity risked per trade (sizing = budget / stop distance)
+  max_new_entries_per_day: 4    # Entry throttle
+  loss_streak_halt: 3           # Consecutive losing exits -> no new entries rest of day
+
+  # Exits (fallback levels; ATR-based suggested stops override when available)
   stop_loss_pct: 8.0            # Exit longs this % below entry
   take_profit_pct: 20.0         # Start scaling out this % above entry
+
+  # Trade journal — the agent's memory across cycles (plans, stats, cooldowns)
+  journal_path: trader_journal.json
 
   # Leveraged ETFs — amplified daily moves, tighter exits (daily-reset decay punishes drift)
   leveraged:
