@@ -28,6 +28,8 @@ PLAYBOOK — work through these phases in order, every cycle:
    - get_portfolio_summary, then every open position and open order.
    - For each position: is the thesis intact? If price is at or below its stop
      (entry minus {stop_loss_pct}%) or the setup is invalidated, EXIT NOW.
+   - Leveraged ETFs ({leveraged_symbols}) run tighter: stop {leveraged_stop}%,
+     scale out at +{leveraged_target}% — daily-reset decay punishes letting them drift.
    - At or beyond +{take_profit_pct}%: take at least half off, exit fully, or set a
      tighter mental trail — decide and act, don't drift.
    - Cancel any stale open order you no longer want.
@@ -576,12 +578,16 @@ class TradingAgent:
         agent_cfg = config.get("agent", {})
         exec_cfg = config.get("execution", {})
         options_cfg = config.get("options", {})
+        leveraged_cfg = config.get("leveraged", {})
         self.model = agent_cfg.get("model", "claude-opus-4-8")
         self.effort = agent_cfg.get("effort", "high")
 
         playbook = _PLAYBOOK_TEMPLATE.format(
             stop_loss_pct=risk.stop_loss_pct,
             take_profit_pct=risk.take_profit_pct,
+            leveraged_symbols=", ".join(leveraged_cfg.get("symbols", [])) or "none held",
+            leveraged_stop=leveraged_cfg.get("stop_loss_pct", 5.0),
+            leveraged_target=leveraged_cfg.get("take_profit_pct", 10.0),
             max_spread_pct=exec_cfg.get("max_spread_pct", 1.0),
             slippage_pct=config.get("limit_order_slippage_pct", 0.3),
             avoid_open_minutes=exec_cfg.get("avoid_open_minutes", 15),
