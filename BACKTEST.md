@@ -48,3 +48,25 @@ design of the test).
 One year, one market regime (a +14% SPY tape), 7 large-cap names, daily bars,
 no intraday simulation. This is evidence, not proof; treat all results as
 in-sample until tested forward.
+
+## Intraday day-trading test (opening-range breakout, 58 days)
+
+`scripts/intraday_backtest.py` on 5-minute SPY/QQQ/TQQQ bars (2026-03-24 → 06-15,
+a strong uptrend). Opening-range(30m) breakout long, stop at range low, exit on
+stop or end-of-day, one trade/day (cash-account settlement cap), 5 bps/side.
+"Optimal" gate = day gaps up vs prior close AND opening range closes green.
+
+| Instrument | Optimal day-trade | Every day | Buy & hold |
+|---|---|---|---|
+| SPY | +1.2% (65% win) | −0.8% (48% win) | **+15.9%** |
+| QQQ | +0.5% | +0.5% | **+27.1%** |
+| TQQQ | +4.7% (55% win) | +7.0% | **+92.8%** |
+
+Findings:
+- Day trading lost badly to holding in every cell — flat-overnight forfeits the
+  trend/overnight drift, which was nearly all the return in this bull sample.
+- The "optimal" gate DID help selectivity (SPY 48%→65% win, −0.8%→+1.2%) —
+  fewer, better trades — but only made day-trading less-bad, not better than hold.
+- Caveat: sample is all uptrend. Day trading's theoretical edge is defensive
+  (choppy/down markets, where flat-overnight avoids pain). A fair go/no-go test
+  needs a correction/bear period — not yet run.
