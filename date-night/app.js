@@ -211,7 +211,7 @@
 
   function updateSaveBtn() {
     const saved = state.current && state.saved.includes(state.current.id);
-    $("#act-save").innerHTML = saved ? "<span>💛</span>Saved" : "<span>🤍</span>Save";
+    $("#act-save").innerHTML = saved ? "<span>❤️</span>Saved" : "<span>🤍</span>Save";
   }
 
   /* Slot-machine shuffle, then land on the pick */
@@ -277,7 +277,7 @@
       toast("Removed from saved");
     } else {
       state.saved = [idea.id, ...state.saved];
-      toast("Saved for later 💛");
+      toast("Saved for later ❤️");
     }
     store.set("saved", state.saved);
     updateSaveBtn();
@@ -306,10 +306,8 @@
     openSheet(`
       <h2>🧭 ${esc(idea.title)}</h2>
       <p class="sub">${esc(idea.place)}</p>
-      <a class="sheet-btn primary" style="display:grid;place-items:center;text-decoration:none"
-         href="https://maps.apple.com/?q=${q}" target="_blank" rel="noopener">Open in Apple Maps</a>
-      <a class="sheet-btn" style="display:grid;place-items:center;text-decoration:none;color:inherit"
-         href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Open in Google Maps</a>
+      <a class="sheet-btn primary" href="https://maps.apple.com/?q=${q}" target="_blank" rel="noopener">Open in Apple Maps</a>
+      <a class="sheet-btn" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Open in Google Maps</a>
       <button class="sheet-btn" data-close>Cancel</button>
     `);
   }
@@ -350,7 +348,7 @@
       $("#result").hidden = true;
       renderHistory();
       switchTab("history");
-      toast(idea.tier === "in" ? "Logged! Cozy night counts 💛" : "Logged! That's an out-date 🔥");
+      toast(idea.tier === "in" ? "Logged! Cozy night counts ❤️" : "Logged! That's an out-date 🔥");
     });
   }
 
@@ -372,7 +370,7 @@
         <button class="row-x" data-unsave="${esc(i.id)}" aria-label="Remove">✕</button>
       </div>`).join("") : `
       <div class="empty">
-        <span class="big">💛</span>
+        <span class="big">❤️</span>
         <p>Nothing saved yet. When an idea looks good but tonight's not the night, tap <b>Save</b>.</p>
       </div>`;
   }
@@ -423,11 +421,11 @@
     $("#stats").innerHTML = `
       <div class="stat hero"><b>${outMonth}</b><span>Out this month</span></div>
       <div class="stat"><b>${thisMonth.length}</b><span>Dates this month</span></div>
-      <div class="stat"><b>${streak}${streak ? "🔥" : ""}</b><span>Week streak</span></div>`;
+      <div class="stat green"><b>${streak}</b><span>Week streak${streak ? " 🔥" : ""}</span></div>`;
 
     $("#cheer").textContent =
       outMonth === 0 ? "No pressure. Even one sunset counts. 🌅" :
-      outMonth === 1 ? "One out-date this month. Look at you two. 💛" :
+      outMonth === 1 ? "One out-date this month. Look at you two. ❤️" :
       outMonth <= 3  ? "Getting out more already! 🔥" :
                        "Okay, social butterflies. 🦋";
 
@@ -451,10 +449,20 @@
   $("#history-list").addEventListener("click", e => {
     const del = e.target.closest("[data-del]");
     if (!del) return;
-    if (!confirm("Delete this date from your history?")) return;
-    state.history = state.history.filter(h => String(h.id) !== del.dataset.del);
-    store.set("history", state.history);
-    renderHistory();
+    const entry = state.history.find(h => String(h.id) === del.dataset.del);
+    if (!entry) return;
+    openSheet(`
+      <h2>Delete this date?</h2>
+      <p class="sub">${esc(entry.title)} will be removed from your history.</p>
+      <button class="sheet-btn danger" id="confirm-del">Delete</button>
+      <button class="sheet-btn" data-close>Keep it</button>
+    `);
+    $("#confirm-del").addEventListener("click", () => {
+      state.history = state.history.filter(h => h !== entry);
+      store.set("history", state.history);
+      closeSheet();
+      renderHistory();
+    });
   });
 
   /* ---------- Tabs ---------- */

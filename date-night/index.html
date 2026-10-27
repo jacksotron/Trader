@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Date Night</title>
   <meta name="description" content="Pick our next Charleston date.">
-  <meta name="theme-color" content="#1b1412">
+  <meta name="theme-color" content="#0a0809">
 
   <!-- iPhone home-screen app settings -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,6 +16,9 @@
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400..800;1,400..800&family=Shrikhand&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -25,7 +28,7 @@
     <main class="screen" id="screen-pick">
       <header class="top">
         <p class="eyebrow" id="greeting">Hey you two</p>
-        <h1>What's the move?</h1>
+        <h1>What's the <em>move</em>?</h1>
       </header>
 
       <section class="filters" aria-label="Filters">
@@ -49,7 +52,7 @@
     <main class="screen" id="screen-saved" hidden>
       <header class="top">
         <p class="eyebrow">For later</p>
-        <h1>Saved ideas</h1>
+        <h1>Saved <em>ideas</em></h1>
       </header>
       <div id="saved-list" class="list"></div>
     </main>
@@ -58,7 +61,7 @@
     <main class="screen" id="screen-history" hidden>
       <header class="top">
         <p class="eyebrow">Our story so far</p>
-        <h1>Date history</h1>
+        <h1>Date <em>history</em></h1>
       </header>
       <div class="stats" id="stats"></div>
       <p class="cheer" id="cheer"></p>
@@ -68,7 +71,7 @@
     <!-- ============ TAB BAR ============ -->
     <nav class="tabbar" aria-label="Main">
       <button class="tab active" data-tab="pick"><span class="tab-ic">🎲</span><span>Pick</span></button>
-      <button class="tab" data-tab="saved"><span class="tab-ic">💛</span><span>Saved</span></button>
+      <button class="tab" data-tab="saved"><span class="tab-ic">❤️</span><span>Saved</span></button>
       <button class="tab" data-tab="history"><span class="tab-ic">📖</span><span>History</span></button>
     </nav>
   </div>
