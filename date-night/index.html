@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Date Night</title>
+  <meta name="description" content="Pick our next Charleston date.">
+  <meta name="theme-color" content="#1b1412">
+
+  <!-- iPhone home-screen app settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Date Night">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- ============ PICK SCREEN ============ -->
+    <main class="screen" id="screen-pick">
+      <header class="top">
+        <p class="eyebrow" id="greeting">Hey you two</p>
+        <h1>What's the move?</h1>
+      </header>
+
+      <section class="filters" aria-label="Filters">
+        <div class="filters-head">
+          <span>Filters <small>(all optional)</small></span>
+          <button class="link-btn" id="clear-filters" hidden>Clear</button>
+        </div>
+        <div id="filter-rows"></div>
+      </section>
+
+      <div class="pick-wrap">
+        <button class="pick-btn" id="pick-btn">
+          <span class="pick-dice" aria-hidden="true">🎲</span>
+          <span>Pick our date</span>
+        </button>
+        <p class="pick-count" id="pick-count"></p>
+      </div>
+    </main>
+
+    <!-- ============ SAVED SCREEN ============ -->
+    <main class="screen" id="screen-saved" hidden>
+      <header class="top">
+        <p class="eyebrow">For later</p>
+        <h1>Saved ideas</h1>
+      </header>
+      <div id="saved-list" class="list"></div>
+    </main>
+
+    <!-- ============ HISTORY SCREEN ============ -->
+    <main class="screen" id="screen-history" hidden>
+      <header class="top">
+        <p class="eyebrow">Our story so far</p>
+        <h1>Date history</h1>
+      </header>
+      <div class="stats" id="stats"></div>
+      <p class="cheer" id="cheer"></p>
+      <div id="history-list" class="list"></div>
+    </main>
+
+    <!-- ============ TAB BAR ============ -->
+    <nav class="tabbar" aria-label="Main">
+      <button class="tab active" data-tab="pick"><span class="tab-ic">🎲</span><span>Pick</span></button>
+      <button class="tab" data-tab="saved"><span class="tab-ic">💛</span><span>Saved</span></button>
+      <button class="tab" data-tab="history"><span class="tab-ic">📖</span><span>History</span></button>
+    </nav>
+  </div>
+
+  <!-- ============ RESULT OVERLAY (the idea card) ============ -->
+  <div class="overlay" id="result" hidden>
+    <div class="result-top">
+      <button class="icon-btn" id="close-result" aria-label="Close">✕</button>
+    </div>
+    <div class="result-body">
+      <article class="card" id="card"></article>
+    </div>
+    <div class="result-actions" id="result-actions">
+      <button class="act" id="act-reroll"><span>🔄</span>Reroll</button>
+      <button class="act" id="act-save"><span>🤍</span>Save</button>
+      <button class="act act-primary" id="act-done"><span>✅</span>We did it</button>
+    </div>
+  </div>
+
+  <!-- ============ BOTTOM SHEET (directions + "we did it") ============ -->
+  <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true"></div>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+
+  <script src="ideas.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
